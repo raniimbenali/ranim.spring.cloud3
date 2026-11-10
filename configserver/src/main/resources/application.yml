@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: "configserver"
+  profiles:
+    active: native          # use "git" to read the configuration from GitHub (see the "git" section below)
+  cloud:
+    config:
+      server:
+        native:
+          # configuration read from the file system: the config-repo folder at the root of the project.
+          # In docker-compose the folder is mounted and CONFIG_REPO_PATH=file:/config-repo/
+          # (classpath version: "classpath:/config")
+          search-locations: "${CONFIG_REPO_PATH:file:../config-repo/,file:./config-repo/}"
+  # PDF 09: RabbitMQ (Spring Cloud Bus, needed by Config Monitor). In docker-compose: SPRING_RABBITMQ_HOST=rabbitmq
+  rabbitmq:
+    host: "localhost"
+    port: 5672
+    username: "guest"
+    password: "guest"
+server:
+  port: 9999
+# PDF 09: all the actuator endpoints (busrefresh, ...)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
+---
+# configuration read from GitHub: start with SPRING_PROFILES_ACTIVE=git
+spring:
+  config:
+    activate:
+      on-profile: git
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/YOUR_GITHUB_USERNAME/config-repo.git
+          default-label: main
+          clone-on-start: true

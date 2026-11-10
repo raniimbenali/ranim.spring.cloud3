@@ -1,0 +1,63 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: gatewayserver
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: true
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lowerCaseServiceId: true
+      routes:
+        - id: r1
+          uri: lb://BRAND
+          predicates:
+            - Path=/api/brands/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: brandCircuitBreaker
+                fallbackUri: forward:/contactAdmin
+        - id: r2
+          uri: lb://PRODUCT
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: productCircuitBreaker
+                fallbackUri: forward:/contactAdmin
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: "http://localhost:8090/realms/master/protocol/openid-connect/certs"
+eureka:
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: "${DISCOVERY_SERVICE_URL:http://localhost:8761/eureka}"
+  instance:
+    prefer-ip-address: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    gateway:
+      access: unrestricted
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      permittedNumberOfCallsInHalfOpenState: 2
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10000
